@@ -1,7 +1,9 @@
 package ee.mario.videoplanetbackend.controller;
 
+import ee.mario.videoplanetbackend.entity.Customer;
 import ee.mario.videoplanetbackend.entity.Movie;
 import ee.mario.videoplanetbackend.entity.Rental;
+import ee.mario.videoplanetbackend.repository.CustomerRepository;
 import ee.mario.videoplanetbackend.repository.RentalRepository;
 import ee.mario.videoplanetbackend.service.RentalService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,9 +25,8 @@ public class RentalController {
         return rentalRepository.findByCustomerId(customerId);
     }
 
-    @PostMapping("orders")
-    public Rental postRental(@RequestBody List<Movie> movies) {
-        Long customerId = 1L;
+    @PostMapping("rentals/{customerId}")
+    public Rental postRental(@PathVariable Long customerId, @RequestBody List<Movie> movies) {
         return rentalService.saveRental(customerId, movies);
     }
 }
