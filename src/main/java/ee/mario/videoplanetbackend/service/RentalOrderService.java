@@ -3,6 +3,7 @@ package ee.mario.videoplanetbackend.service;
 import ee.mario.videoplanetbackend.dto.RentalOrderRequest;
 import ee.mario.videoplanetbackend.dto.RentalOrderResponse;
 import ee.mario.videoplanetbackend.dto.RentalRequestItem;
+import ee.mario.videoplanetbackend.dto.RentalReturnResponse;
 import ee.mario.videoplanetbackend.entity.*;
 import ee.mario.videoplanetbackend.repository.CustomerRepository;
 import ee.mario.videoplanetbackend.repository.MovieRepository;
@@ -158,6 +159,77 @@ public class RentalOrderService {
                 }
             default:
                 return BigDecimal.ZERO;
+        }
+    }
+
+    public List<RentalReturnResponse> handleReturn(Long orderId) {
+        RentalOrder order = rentalOrderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Rental not found"));
+
+        Customer customer = order.getCustomer();
+        List<Rental> rentals = rentalRepository.findByRentalOrderId(order.getId());
+
+        List<RentalReturnResponse> responses = new ArrayList<>();
+        boolean anyReturned = false;
+
+        for (Rental r : rentals) {
+            if (r.getStatus() == RentalStatus.RETURNED) continue;
+
+            anyReturned = true;
+
+            Movie movie = r.getMovie();
+            LocalDate rentedOn = r.getRentedOn();
+            int daysRequested = r.getDaysRequested();
+            LocalDate now = LocalDate.now();
+
+            long actualDays = java.time.temporal.ChronoUnit.DAYS.between(rentedOn, now);
+            long extraDays = Math.max(0, actualDays - daysRequested);
+
+            BigDecimal lateFee = calculateLateFee(movie, extraDays);
+            r.setReturnedOn(now);
+            r.setStatus(RentalStatus.RETURNED);
+            r.setLateFee(lateFee);
+
+            int earnedPoints = calculateBonusPoints(movie);
+            customer.setBonusPoints(customer.getBonusPoints() + earnedPoints);
+            movie.setRented(false);
+
+            rentalRepository.save(r);
+            movieRepository.save(movie);
+
+            responses.add(new RentalReturnResponse(r, actualDays, lateFee, earnedPoints));
+        }
+
+        if (!anyReturned) {
+            throw new IllegalStateException("All rentals in this order were already returned.");
+        }
+
+        customerRepository.save(customer);
+        return responses;
+    }
+
+    private BigDecimal calculateLateFee(Movie movie, long extraDays) {
+        if (extraDays <= 0) return BigDecimal.ZERO;
+
+        switch (movie.getType()) {
+            case NEW:
+                return PREMIUM_PRICE.multiply(BigDecimal.valueOf(extraDays));
+            case REGULAR:
+            case OLD:
+                return BASIC_PRICE.multiply(BigDecimal.valueOf(extraDays));
+            default:
+                return BigDecimal.ZERO;
+        }
+    }
+
+    private int calculateBonusPoints(Movie movie) {
+        switch (movie.getType()) {
+            case NEW:
+                return 2;
+            case REGULAR, OLD:
+                return 1;
+            default:
+                return 0;
         }
     }
 
