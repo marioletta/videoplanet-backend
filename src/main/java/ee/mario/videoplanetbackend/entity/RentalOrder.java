@@ -5,18 +5,21 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Data
-@Entity
 @NoArgsConstructor
 @AllArgsConstructor
-
-public class Movie {
+@Entity
+public class RentalOrder {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String title;
 
-    @Enumerated(EnumType.STRING)
-    private MovieType type;
-    private boolean rented;
+    @ManyToOne
+    private Customer customer;
+
+    @OneToMany(mappedBy = "rentalOrder", cascade = CascadeType.ALL)
+    private List<Rental> rentals = new ArrayList<>();
 }

@@ -2,7 +2,6 @@ package ee.mario.videoplanetbackend.controller;
 
 import ee.mario.videoplanetbackend.entity.Customer;
 import ee.mario.videoplanetbackend.repository.CustomerRepository;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,8 +10,6 @@ import java.util.List;
 
 @RestController
 public class CustomerController {
-    @Autowired
-    ModelMapper modelMapper;
 
     @Autowired
     CustomerRepository customerRepository;
